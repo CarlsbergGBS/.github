@@ -1,25 +1,27 @@
 # This is a basic workflow that is manually triggered
 
-name: ⚙️🏛️⚗️ Manual/Automated TF CI workflow
+name: ⚙️🏛️⚗️ Manual/Automated TF workflow
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
 on:
   push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
 
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
       env:
         # Friendly description to be shown in the UI instead of 'name'
-        description: 'App version to deploy'
+        description: 'version to deploy'
         # Default value if no value is explicitly provided
         default: 'latest'
         # Input has to be provided for the workflow to run
         required: true
 
 env:
-  appname: hello-world-support-infra  # set this to your application's name
   organization: carlsberggbs
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
