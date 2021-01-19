@@ -1,0 +1,151 @@
+# This is a basic workflow that is manually triggered
+
+name: ⚙️🌐⚗️ Manual/Automated CI workflow
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  push:
+    paths:
+    - 'src/hello-world-njs-webapp/**'
+
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      env:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: 'App version to deploy'
+        # Default value if no value is explicitly provided
+        default: 'latest'
+        # Input has to be provided for the workflow to run
+        required: true
+
+env:
+  appname: hello-world-njs-webapp  # set this to your application's name
+  organization: carlsberggbs
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs: 
+  semantic-versioning:
+    name: ⚗️ Versioning( github)
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    outputs:
+      next-version: ${{ steps.bump_version.outputs.next-version }}
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@master
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+      - name: Debug
+        run: echo ${{ env.BRANCH_NAME }}
+      # Runs a single command using the runners shell
+      - name: Read current version
+        id: read_property
+        uses: christian-draeger/read-properties@1.0.0
+        with:
+          path: './src/${{env.appname}}/VERSION'
+          property: 'version'
+      - name: Current version
+        run: echo ${{ steps.read_property.outputs.value }}
+      - name: ⚗️Increment Semantic Version
+        # You may pin to the exact commit or the version.
+        # uses: christian-draeger/increment-semantic-version@9d04121fb4825e033aeeaaf6d42b44b8b4e81ac5
+        id: bump_version
+        uses: christian-draeger/increment-semantic-version@1.0.2
+        with:
+          # The current semantic version you want to increment
+          current-version: ${{ steps.read_property.outputs.value }}
+          # The versions fragment you want to increment. possible options are [ major | feature | bug | alpha | beta | rc ]
+          version-fragment: 'bug'
+     
+      - name: New version
+        run: echo ${{ steps.bump_version.outputs.next-version }}
+      
+      - name: Remove existing version file
+        uses: JesseTG/rm@v1.0.0
+        with:
+          path: './src/${{env.appname}}/VERSION'
+
+      - name: Write new version
+        uses: christian-draeger/write-properties@1.0.1
+        with:
+          path: './src/${{env.appname}}/VERSION'
+          property: 'version'
+          value: ${{ steps.bump_version.outputs.next-version }}  
+   
+  push-image-docker-registry:
+    name: 📦 Build and push to docker registry( github)
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    needs: [semantic-versioning]
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@master
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+
+      - name: GitHub Docker Action repo
+        # You may pin to the exact commit or the version.
+        # uses: matootie/github-docker@c1290d4f67c6fc0cdf84b2924d6dccf658129b3e
+        uses: matootie/github-docker@v3.1.0
+        with:
+          # GitHub Repository Token to log in using.
+          accessToken:  ${{ secrets.TOKEN }}
+          # The desired name for the image. Defaults to current repository name.
+          imageName: '${{env.appname}}' # optional
+          # The desired tag for the image. Defaults to latest. Optionally accepts multiple tags separated by newline.
+          # Usage of other job references
+          tag: |
+           latest
+           ${{needs.semantic-versioning.outputs.next-version}} 
+           ${{ env.BRANCH_NAME }}
+          # optional, default is latest
+          # Any additional build arguments to use when building the image, separated by newline.
+          #buildArgs: # optional
+          # Where should GitHub Docker find the Dockerfile, relative to the root of the repository.
+          context: "./src/${{env.appname}}/" # optional, default is .
+          # What Dockerfile should GitHub Docker be using when building. Defaults to traditional Dockerfile name.
+          #contextName: # optional, default is Dockerfile
+          # Whether or not to push to GitHub Container Registry instead of GitHub Package Registry.
+          #containerRegistry: true # optional, default is false
+          # The repository to push the image to. Defaults to the current repository. Must be specified in format user/repo.
+          #repository: # optional
+        
+      - name: Push to built branch
+        uses: Automattic/action-commit-to-branch@master
+        with:
+          branch: '${{ env.BRANCH_NAME }}'
+          commit_message: 'Updated version to ${{ env.BRANCH_NAME }} -> ${{needs.semantic-versioning.outputs.next-version}} '
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }} # Required
+     
+      - name: Pull docker image
+        run: docker pull docker.pkg.github.com/${{env.organization}}/cpaas-monorepo-proj/${{env.appname}}:${{needs.semantic-versioning.outputs.next-version}} 
+
+  teams-notification:
+    # The type of runner that the job will run on
+      name: 👨‍👩‍👧‍👦👨‍👩‍👧‍👦👨‍👩‍👧‍👦 Notify on teams
+      runs-on: ubuntu-latest
+      needs: [push-image-docker-registry,semantic-versioning]
+      # Steps represent a sequence of tasks that will be executed as part of the job
+      steps:
+        - name: 👨‍👩‍👧‍👦👨‍👩‍👧‍👦👨‍👩‍👧‍👦 Notify dedicated teams channel
+          uses: jdcargile/ms-teams-notification@v1.2
+          with:
+            github-token:  ${{ secrets.TOKEN }} # this will use the runner's token.
+            ms-teams-webhook-uri: ${{ secrets.CPAAS_TEAMS_URI_GITHUB }}
+            notification-summary: "New version available -> ${{env.appname}}: ${{needs.semantic-versioning.outputs.next-version}}  📦 &#x1F680​​ &#x2705;" 
+            notification-color: 17a2b8
+            timezone: America/Denver
