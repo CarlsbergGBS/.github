@@ -1,0 +1,13 @@
+{
+    "name": "⚙️🌐⚗️ Manual/Automated CI workflow",
+    "description": "⚙️🌐⚗️ Manual/Automated CI workflow",
+    "iconName": "transferir-docker",
+    "categories": [
+        "Terraform"
+    ],
+    "filePatterns": [
+        "package.json$",
+        "^Dockerfile",
+        ".*\\.md$"
+    ]
+}
