@@ -22,8 +22,8 @@ on:
         required: true
 
 env:
-  organization: carlsberggbs
-  
+  organization: cb
+  appname: cbappname
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -154,7 +154,7 @@ jobs:
           uses: jdcargile/ms-teams-notification@v1.2
           with:
             github-token:  ${{ secrets.TOKEN }} # this will use the runner's token.
-            ms-teams-webhook-uri: ${{ secrets.CPAAS_TEAMS_URI_GITHUB }}
+            ms-teams-webhook-uri: ${{ secrets._TEAMS_URI_GITHUB }}
             notification-summary: "New infra version available 🏛️ -> ${{env.appname}}  📦 &#x1F680​​ &#x2705;" 
             notification-color: 17a2b8
             timezone: America/Denver
