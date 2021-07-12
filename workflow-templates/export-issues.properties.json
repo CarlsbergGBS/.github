@@ -1,0 +1,13 @@
+{
+    "name": "⚙️🏛️ Export issues as .md",
+    "description": "⚙️🏛️gathers all issues within repo and generates a MD file",
+    "iconName": "transferir-tf",
+    "categories": [
+        "Terraform"
+    ],
+    "filePatterns": [
+        "package.json$",
+        "^Dockerfile",
+        ".*\\.md$"
+    ]
+}
