@@ -1,6 +1,6 @@
 {
-    "name": "⚙️🏛️ Export issues as .md",
-    "description": "⚙️🏛️gathers all issues within repo and generates a MD file",
+    "name": " 🚄📑 Export issues as .md",
+    "description": "📑 gathers all issues within repo and generates a MD file",
     "iconName": "transferir-tf",
     "categories": [
         "Terraform"
