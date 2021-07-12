@@ -33,14 +33,14 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build:
+  export-issues:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
       with:
         persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
         fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
-    - name: Backup github issues to a markdown file.
+    - name: Backup github issues to a markdown file 📑
       run: |
         pip3 install --user --upgrade setuptools
         pip3 install --user gh2md
@@ -48,7 +48,7 @@ jobs:
         git add ${{ github.event.inputs.targetfilename }}
       env:
         GITHUB_ACCESS_TOKEN:  ${{ github.event.inputs.pat }} #${{ secrets.TOKEN }}
-    - name: Commit files
+    - name: Commit files 📥
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -57,7 +57,7 @@ jobs:
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: extract_branch
-    - name: Push changes
+    - name: Push changes 🧨
       uses: ad-m/github-push-action@master
       with:
         github_token:  ${{ github.event.inputs.pat }} #${{ secrets.TOKEN }}
